@@ -1,7 +1,6 @@
 beds = {}
 beds.player = {}
 beds.pos = {}
-beds.spawn = {}
 
 local is_sp = minetest.is_singleplayer() or false
 local player_in_bed = 0
@@ -125,7 +124,6 @@ end
 
 function beds.skip_night()
 	minetest.set_timeofday(0.23)
-	beds.set_spawns()
 end
 
 function beds.on_rightclick(pos, player)
@@ -166,20 +164,6 @@ end
 
 
 -- callbacks
-
-minetest.register_on_joinplayer(function(player)
-	beds.read_spawns()
-end)
-
-minetest.register_on_respawnplayer(function(player)
-	local name = player:get_player_name()
-	local pos = beds.spawn[name] or nil
-	if pos then
-		player:setpos(pos)
-		return true
-	end
-end)
-
 minetest.register_on_leaveplayer(function(player)
 	local name = player:get_player_name()
 	lay_down(player, nil, nil, false)
@@ -210,6 +194,5 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 end)
 
 
--- nodes and respawn function
+-- nodes
 dofile(minetest.get_modpath("beds").."/nodes.lua")
-dofile(minetest.get_modpath("beds").."/spawns.lua")
