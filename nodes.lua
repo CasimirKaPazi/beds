@@ -29,7 +29,6 @@ local function add_top(pos)
 	return false
 end
 
-
 -- register nodes
 function beds.register_bed(name, def)
 	minetest.register_node(name .. "_bottom", {

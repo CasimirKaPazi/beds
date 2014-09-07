@@ -2,12 +2,7 @@ beds = {}
 beds.player = {}
 beds.pos = {}
 
-local is_sp = minetest.is_singleplayer() or false
 local player_in_bed = 0
-local form = 	"size[8,15;true]"..
-		"bgcolor[#080808BB; true]"..
-		"button_exit[2,12;4,0.75;leave;Leave Bed]"
-
 
 -- help functions
 
@@ -90,25 +85,13 @@ local function lay_down(player, pos, bed_pos, state)
 	player:hud_set_flags(hud_flags)
 end
 
-local function update_formspecs(finished)
+local function update_message(finished)
+	if finished then return end
 	local ges = #minetest.get_connected_players()
-	local form_n = ""
+	if ges == 1 then return end
 	local is_majority = (ges/2) < player_in_bed
-
-	if finished then
-		form_n = form ..
-			"label[2.7,11; Good morning.]"
-	else
-		form_n = form ..
-			"label[2.2,11;"..tostring(player_in_bed).." of "..tostring(ges).." players are in bed]"	
-		if is_majority then
-			form_n = form_n ..
-				"button_exit[2,8;4,0.75;force;Force night skip]"
-		end
-	end
-
 	for name,_ in pairs(beds.player) do
-		minetest.show_formspec(name, "beds_form", form_n)
+		minetest.chat_send_player(name, ""..player_in_bed.." of "..ges.." players are in bed.")
 	end
 end
 
@@ -123,7 +106,11 @@ function beds.kick_players()
 end
 
 function beds.skip_night()
-	minetest.set_timeofday(0.23)
+	local tod = minetest.get_timeofday()
+	if tod < 0.2 or tod > 0.805 then
+		minetest.set_timeofday(0.22)
+		minetest.chat_send_all("Good morning.")
+	end
 end
 
 function beds.on_rightclick(pos, player)
@@ -131,32 +118,18 @@ function beds.on_rightclick(pos, player)
 	local ppos = player:getpos()
 	local tod = minetest.get_timeofday()
 
-	if tod > 0.2 and tod < 0.805 then
-		if beds.player[name] then
-			lay_down(player, nil, nil, false)
-		end
-		minetest.chat_send_player(name, "You can only sleep at night.")
-		return
-	end
-
 	-- move to bed
 	if not beds.player[name] then
 		lay_down(player, ppos, pos)
 	else
 		lay_down(player, nil, nil, false)
 	end
-
-	if not is_sp then
-		update_formspecs(false)
-	end
+	update_message(false)
 
 	-- skip the night and let all stand up
 	if check_in_beds() then
 		minetest.after(2, function()
 			beds.skip_night()
-			if not is_sp then
-				update_formspecs(true)
-			end
 			beds.kick_players()
 		end)
 	end
@@ -171,28 +144,10 @@ minetest.register_on_leaveplayer(function(player)
 	if check_in_beds() then
 		minetest.after(2, function()
 			beds.skip_night()
-			update_formspecs(true)
 			beds.kick_players()
 		end)
 	end
 end)
-
-minetest.register_on_player_receive_fields(function(player, formname, fields)
-	if formname ~= "beds_form" then
-		return
-	end
-	if fields.quit or fields.leave then
-		lay_down(player, nil, nil, false)
-		update_formspecs(false)
-	end
-
-	if fields.force then
-		beds.skip_night()
-		update_formspecs(true)
-		beds.kick_players()
-	end
-end)
-
 
 -- nodes
 dofile(minetest.get_modpath("beds").."/nodes.lua")
