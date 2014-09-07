@@ -89,7 +89,6 @@ local function update_message(finished)
 	if finished then return end
 	local ges = #minetest.get_connected_players()
 	if ges == 1 then return end
-	local is_majority = (ges/2) < player_in_bed
 	for name,_ in pairs(beds.player) do
 		minetest.chat_send_player(name, ""..player_in_bed.." of "..ges.." players are in bed.")
 	end
